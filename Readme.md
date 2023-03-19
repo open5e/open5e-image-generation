@@ -13,8 +13,7 @@ The script will generate 4 images each: front, side, back and top. This is becau
 It may take a long time before you see your first result, primarily due to the uv.smart_project() function, but this is necessary for the shader to render properly.
 It will run faster on models that have better topology and fewer polys.
 
-The script is stored as a separate .py file and linked into the Blender file.
-
+The script is stored as a separate .py file and linked into the Blender file. This is super janky and seems to break when the directory is moved, so you may need to re-link it in Blender before it will update. 
 
 ### Developer Notes
 
