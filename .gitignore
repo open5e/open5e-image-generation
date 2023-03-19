@@ -1,2 +1,4 @@
 
 *.blend1
+stls/*.stl
+output/*.png
