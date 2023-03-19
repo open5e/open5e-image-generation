@@ -34,7 +34,7 @@ def scale_to_fit_camera_bounds(obj, camera):
 
     obj_scale_x = (2 * math.tan(camera_angle_x / 2)) / obj_dimensions.x
     obj_scale_y = (2 * math.tan(camera_angle_y / 2)) / obj_dimensions.y
-    required_scale = min(obj_scale_x, obj_scale_y) * 15
+    required_scale = min(obj_scale_x, obj_scale_y) * 14 # This is a magic number dependent on the camera zoom settings, if you change them, you will need to change it.
 
     obj.scale = (required_scale, required_scale, required_scale)
 
@@ -42,8 +42,14 @@ def scale_to_fit_camera_bounds(obj, camera):
     bpy.context.view_layer.objects.active = obj
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-
-
+    
+def rotate_and_render(view_name, degrees):
+    # Rotate 90 degrees further to get other side
+    imported_object.rotation_euler.z += math.radians(degrees)
+    bpy.ops.view3d.camera_to_view_selected()
+    
+    output_path = os.path.join(output_dir, f"{model_name}-" + view_name + ".png")
+    bpy.context.scene.render.filepath = output_path
 
 # Function to process and render each model
 def process_model(model_file_path, output_dir):
@@ -60,17 +66,15 @@ def process_model(model_file_path, output_dir):
     bpy.ops.uv.smart_project()
     bpy.ops.object.mode_set(mode='OBJECT')
 
-    # Center object
-    bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='BOUNDS')
-    imported_object.location = (0, 0, 0)
-
     # Apply custom shader
     shader_name = "5. Dotted lines shader"
     apply_shader(imported_object, shader_name)
 
-    # Scale object to fit camera bounds and rotate it
+    # Position camera
     camera = bpy.data.objects['Camera']
     center_camera_on_object(imported_object, camera)
+    
+    # Set base scale of object relative to camera viewport
     scale_to_fit_camera_bounds(imported_object, camera)
     imported_object.rotation_euler.z += math.radians(135)
     
@@ -80,36 +84,25 @@ def process_model(model_file_path, output_dir):
     bpy.ops.view3d.camera_to_view_selected()
     bpy.ops.transform.resize(value=(0.95, 0.95, 0.95))
     
+    
+    ### Do a bunch of renders
+    
     ## FRONT RENDER
 
     # Set render output settings
     output_path = os.path.join(output_dir, f"{model_name}-front.png")
     bpy.context.scene.render.filepath = output_path
 
-    # Render and save the image
-    bpy.ops.render.render(write_still=True)\
+    # Render and save the front image
+    bpy.ops.render.render(write_still=True)
     
     ## SIDE RENDER
-    
-    # Rotate 90 degrees further to get other side
-    imported_object.rotation_euler.z += math.radians(90)
-    
-    output_path = os.path.join(output_dir, f"{model_name}-side.png")
-    bpy.context.scene.render.filepath = output_path
-
-    # Render and save the image
-    bpy.ops.render.render(write_still=True)
+    rotate_and_render("side", 90)
     
     ## BACK RENDER
     
-    # Rotate 90 degrees further to get other side
-    imported_object.rotation_euler.z += math.radians(90)
-    
-    output_path = os.path.join(output_dir, f"{model_name}-side.png")
-    bpy.context.scene.render.filepath = output_path
-
-    # Render and save the image
-    bpy.ops.render.render(write_still=True)
+    # Rotate 90 degrees further to get back of model
+    rotate_and_render("back", 90)
     
     ## TOP RENDER
     
@@ -117,14 +110,12 @@ def process_model(model_file_path, output_dir):
     imported_object.rotation_euler = (math.radians(120), 0, math.radians(215))
     bpy.ops.view3d.camera_to_view_selected()
     
-    # Set render output settings
+    # Set render output settings & render top image
     output_path = os.path.join(output_dir, f"{model_name}-top.png")
     bpy.context.scene.render.filepath = output_path
-
-    # Render and save the image
     bpy.ops.render.render(write_still=True)
 
-    # Remove imported object from the scene
+    # Remove imported object from the scene and cleanup
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.select_all(action='DESELECT')
     imported_object.select_set(True)
@@ -148,5 +139,3 @@ def main():
 
 # Run the script
 main()
-
-# End
