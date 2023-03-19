@@ -43,17 +43,23 @@ def scale_to_fit_camera_bounds(obj, camera):
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     
-def rotate_and_render(view_name, degrees):
+def rotate_and_render(model_name, output_dir, imported_object,view_name, degrees):
     # Rotate 90 degrees further to get other side
     imported_object.rotation_euler.z += math.radians(degrees)
+    
+    #re-center camera on model
     bpy.ops.view3d.camera_to_view_selected()
     
-    output_path = os.path.join(output_dir, f"{model_name}-" + view_name + ".png")
+    output_path = os.path.join(output_dir, f"{model_name}-{view_name}.png")
     bpy.context.scene.render.filepath = output_path
+    
+    bpy.ops.render.render(write_still=True)
 
 # Function to process and render each model
 def process_model(model_file_path, output_dir):
     model_name = os.path.splitext(os.path.basename(model_file_path))[0]
+    shader_name = "Dotted lines shader" # Sometimes blender will change the name to add ".001" and I don't know why. If this line breaks, that's probably why.
+    camera = bpy.data.objects['Camera']
 
     bpy.ops.import_mesh.stl(filepath=model_file_path)
 
@@ -67,11 +73,9 @@ def process_model(model_file_path, output_dir):
     bpy.ops.object.mode_set(mode='OBJECT')
 
     # Apply custom shader
-    shader_name = "5. Dotted lines shader"
     apply_shader(imported_object, shader_name)
 
     # Position camera
-    camera = bpy.data.objects['Camera']
     center_camera_on_object(imported_object, camera)
     
     # Set base scale of object relative to camera viewport
@@ -82,7 +86,6 @@ def process_model(model_file_path, output_dir):
     bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_MASS', center='BOUNDS')
     imported_object.location = (0, 0, 0)
     bpy.ops.view3d.camera_to_view_selected()
-    bpy.ops.transform.resize(value=(0.95, 0.95, 0.95))
     
     
     ### Do a bunch of renders
@@ -97,12 +100,12 @@ def process_model(model_file_path, output_dir):
     bpy.ops.render.render(write_still=True)
     
     ## SIDE RENDER
-    rotate_and_render("side", 90)
+    rotate_and_render(model_name, output_dir, imported_object, "side", 90)
     
     ## BACK RENDER
     
     # Rotate 90 degrees further to get back of model
-    rotate_and_render("back", 90)
+    rotate_and_render(model_name, output_dir, imported_object, "back", 90)
     
     ## TOP RENDER
     
