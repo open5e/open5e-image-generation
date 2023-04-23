@@ -1,4 +1,6 @@
 
 *.blend1
 stls/*.stl
+blend_files/*.blend
+*.obj
 output/*.png
